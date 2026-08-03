@@ -20,74 +20,84 @@
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
-# id must match the group ids used in docs/role-radar.html's EXCLUDE_GROUPS
+# id must match the group ids used in docs/role-radar.html's EXCLUDE_GROUPS.
+# This is the client-provided company list (7 verticals, ~270 names). Only the
+# subset below actually exposes a public, unauthenticated ATS job-board API
+# (Greenhouse/Ashby/Lever/SmartRecruiters) that this script can query directly —
+# most of the rest run on Workday, iCIMS, SuccessFactors, or a bespoke careers
+# page, which each need their own scraping approach. See README's "Known gaps"
+# section for the full list of what's not yet wired up.
 $Companies = @(
     # Cross-Border, FX & Treasury
-    @{ name = "Wise";                         ats = "smartrecruiters"; slug = "Wise";        cluster = "fx" }
-    @{ name = "Airwallex";                    ats = "ashby";           slug = "airwallex";   cluster = "fx" }
-    @{ name = "Convera";                      ats = "greenhouse";      slug = "convera";     cluster = "fx" }
-    @{ name = "TransferGo";                   ats = "greenhouse";      slug = "transfergo";  cluster = "fx" }
-    @{ name = "Thunes";                       ats = "greenhouse";      slug = "thunes";      cluster = "fx" }
-    @{ name = "Nium";                         ats = "lever";           slug = "nium";        cluster = "fx" }
+    @{ name = "Airwallex";           ats = "ashby";           slug = "airwallex";        cluster = "fx" }
+    @{ name = "dLocal";              ats = "lever";           slug = "dlocal";           cluster = "fx" }
+    @{ name = "EBANX";               ats = "greenhouse";      slug = "ebanx";            cluster = "fx" }
+    @{ name = "Payoneer";            ats = "greenhouse";      slug = "payoneer";         cluster = "fx" }
+    @{ name = "Ripple";              ats = "greenhouse";      slug = "ripple";           cluster = "fx" }
+    @{ name = "Thunes";              ats = "greenhouse";      slug = "thunes";           cluster = "fx" }
+    @{ name = "Wise Platform";       ats = "smartrecruiters"; slug = "Wise";             cluster = "fx" }
+    @{ name = "Capi Money";          ats = "ashby";           slug = "capimoney";        cluster = "fx" }
+    @{ name = "Crown Agents Bank";   ats = "smartrecruiters"; slug = "CrownAgentsBank";  cluster = "fx" }
+    @{ name = "Runa";                ats = "ashby";           slug = "runa";             cluster = "fx" }
+    @{ name = "TransferGo";          ats = "greenhouse";      slug = "transfergo";       cluster = "fx" }
+    @{ name = "Nium";                ats = "lever";           slug = "nium";             cluster = "fx" }
 
     # Acquiring, Merchant Services & POS
-    @{ name = "Adyen";                        ats = "greenhouse";      slug = "adyen";       cluster = "acq" }
-    @{ name = "Block";                        ats = "greenhouse";      slug = "block";       cluster = "acq" }
-    @{ name = "Toast";                        ats = "greenhouse";      slug = "toast";       cluster = "acq" }
-    @{ name = "SumUp";                        ats = "greenhouse";      slug = "sumup";       cluster = "acq" }
-    @{ name = "Verifone";                     ats = "greenhouse";      slug = "verifone";    cluster = "acq" }
-    @{ name = "Dojo";                         ats = "greenhouse";      slug = "dojo";        cluster = "acq" }
+    @{ name = "Adyen";               ats = "greenhouse";      slug = "adyen";           cluster = "acq" }
+    @{ name = "Block";               ats = "greenhouse";      slug = "block";           cluster = "acq" }
+    @{ name = "Cleverbridge";        ats = "smartrecruiters"; slug = "Cleverbridge";    cluster = "acq" }
+    @{ name = "Mollie";              ats = "ashby";           slug = "mollie";          cluster = "acq" }
+    @{ name = "Monext";              ats = "smartrecruiters"; slug = "Monext";          cluster = "acq" }
+    @{ name = "Toast";               ats = "greenhouse";      slug = "toast";           cluster = "acq" }
+    @{ name = "Visa";                ats = "smartrecruiters"; slug = "Visa";            cluster = "acq" }
+    @{ name = "Citcon";              ats = "lever";           slug = "citcon";          cluster = "acq" }
+    @{ name = "Stone";               ats = "greenhouse";      slug = "stone";           cluster = "acq" }
 
     # Issuing, Cards & Digital Wallets
-    @{ name = "Marqeta";                      ats = "greenhouse";      slug = "marqeta";     cluster = "iss" }
-    @{ name = "Galileo Financial Technologies"; ats = "greenhouse";    slug = "galileo";     cluster = "iss" }
-    @{ name = "Lithic";                       ats = "greenhouse";      slug = "lithic";      cluster = "iss" }
-    @{ name = "Highnote";                     ats = "greenhouse";      slug = "highnote";    cluster = "iss" }
-    @{ name = "Brex";                         ats = "greenhouse";      slug = "brex";        cluster = "iss" }
-    @{ name = "Ramp";                         ats = "ashby";           slug = "ramp";        cluster = "iss" }
-    @{ name = "Visa";                         ats = "smartrecruiters"; slug = "Visa";        cluster = "iss" }
-
-    # Fraud, Risk, Identity & Compliance Tech
-    @{ name = "Sift";                         ats = "ashby";           slug = "sift";           cluster = "frc" }
-    @{ name = "Persona";                       ats = "ashby";           slug = "persona";        cluster = "frc" }
-    @{ name = "Socure";                        ats = "ashby";           slug = "socure";         cluster = "frc" }
-    @{ name = "Sardine";                       ats = "ashby";           slug = "sardine";        cluster = "frc" }
-    @{ name = "Alloy";                         ats = "lever";           slug = "alloy";          cluster = "frc" }
-    @{ name = "Feedzai";                       ats = "greenhouse";      slug = "feedzai";        cluster = "frc" }
-    @{ name = "ComplyAdvantage";               ats = "greenhouse";      slug = "complyadvantage"; cluster = "frc" }
-    @{ name = "Forter";                        ats = "greenhouse";      slug = "forter";         cluster = "frc" }
-    @{ name = "Riskified";                     ats = "greenhouse";      slug = "riskified";      cluster = "frc" }
-    @{ name = "Seon";                          ats = "ashby";           slug = "seon";           cluster = "frc" }
-    @{ name = "Elliptic";                      ats = "ashby";           slug = "elliptic";       cluster = "frc" }
-
-    # Alternative Payments & Open Banking
-    @{ name = "GoCardless";                   ats = "greenhouse";      slug = "gocardless"; cluster = "alt" }
-    @{ name = "TrueLayer";                     ats = "greenhouse";      slug = "truelayer";  cluster = "alt" }
-    @{ name = "Plaid";                         ats = "ashby";           slug = "plaid";      cluster = "alt" }
-    @{ name = "Trustly";                       ats = "ashby";           slug = "trustly";    cluster = "alt" }
-    @{ name = "Zip";                           ats = "ashby";           slug = "zip";        cluster = "alt" }
-    @{ name = "Affirm";                        ats = "greenhouse";      slug = "affirm";     cluster = "alt" }
-
-    # Crypto, Digital Assets & Web3 Payments
-    @{ name = "Coinbase";                     ats = "greenhouse";      slug = "coinbase";    cluster = "cry" }
-    @{ name = "Ripple";                        ats = "greenhouse";      slug = "ripple";      cluster = "cry" }
-    @{ name = "Fireblocks";                    ats = "greenhouse";      slug = "fireblocks";  cluster = "cry" }
-    @{ name = "MoonPay";                       ats = "lever";           slug = "moonpay";     cluster = "cry" }
-    @{ name = "Gemini";                        ats = "greenhouse";      slug = "gemini";      cluster = "cry" }
-    @{ name = "Paxos";                         ats = "ashby";           slug = "paxos";       cluster = "cry" }
-    @{ name = "Blockdaemon";                   ats = "ashby";           slug = "blockdaemon"; cluster = "cry" }
-    @{ name = "Anchorage Digital";             ats = "lever";           slug = "anchorage";   cluster = "cry" }
-    @{ name = "Rain";                          ats = "ashby";           slug = "rain";        cluster = "cry" }
+    @{ name = "Marqeta";             ats = "greenhouse";      slug = "marqeta";  cluster = "iss" }
+    @{ name = "Pliant";              ats = "ashby";           slug = "pliant";   cluster = "iss" }
+    @{ name = "Onbe";                ats = "greenhouse";      slug = "onbe";     cluster = "iss" }
+    @{ name = "Tillo";               ats = "ashby";           slug = "tillo";    cluster = "iss" }
 
     # Banking Infrastructure & Embedded Finance
-    @{ name = "Unit";                          ats = "ashby";           slug = "unit";         cluster = "bnk" }
-    @{ name = "Synctera";                       ats = "ashby";           slug = "synctera";     cluster = "bnk" }
-    @{ name = "Treasury Prime";                 ats = "greenhouse";      slug = "treasuryprime"; cluster = "bnk" }
-    @{ name = "Increase";                       ats = "lever";           slug = "increase";     cluster = "bnk" }
-    @{ name = "ClearBank";                      ats = "ashby";           slug = "clearbank";    cluster = "bnk" }
-    @{ name = "Griffin";                        ats = "ashby";           slug = "griffin";      cluster = "bnk" }
-    @{ name = "Column";                         ats = "ashby";           slug = "column";       cluster = "bnk" }
-    @{ name = "Mercury";                        ats = "greenhouse";      slug = "mercury";      cluster = "bnk" }
+    @{ name = "ClearBank";           ats = "ashby";           slug = "clearbank"; cluster = "bnk" }
+    @{ name = "Form3";               ats = "greenhouse";      slug = "form3";     cluster = "bnk" }
+    @{ name = "Column";              ats = "ashby";           slug = "column";    cluster = "bnk" }
+    @{ name = "ConnectPay";          ats = "smartrecruiters"; slug = "Connectpay"; cluster = "bnk" }
+    @{ name = "Fonoa Technologies";  ats = "ashby";           slug = "fonoa";     cluster = "bnk" }
+    @{ name = "Griffin";             ats = "ashby";           slug = "griffin";   cluster = "bnk" }
+    @{ name = "LHV UK";              ats = "greenhouse";      slug = "lhvuk";     cluster = "bnk" }
+    @{ name = "Numeral";             ats = "ashby";           slug = "numeral";   cluster = "bnk" }
+    @{ name = "Taktile";             ats = "ashby";           slug = "taktile";   cluster = "bnk" }
+
+    # Alternative Payments & Open Banking
+    @{ name = "GoCardless";          ats = "greenhouse";      slug = "gocardless"; cluster = "alt" }
+    @{ name = "Plaid";               ats = "ashby";           slug = "plaid";      cluster = "alt" }
+    @{ name = "TrueLayer";           ats = "greenhouse";      slug = "truelayer";  cluster = "alt" }
+    @{ name = "Trustly";             ats = "ashby";           slug = "trustly";    cluster = "alt" }
+
+    # Fraud, Risk, Identity & Compliance Tech
+    @{ name = "ComplyAdvantage";     ats = "greenhouse";      slug = "complyadvantage"; cluster = "frc" }
+    @{ name = "Experian";            ats = "smartrecruiters"; slug = "Experian";        cluster = "frc" }
+    @{ name = "Seon";                ats = "ashby";           slug = "seon";            cluster = "frc" }
+    @{ name = "Trulioo";             ats = "ashby";           slug = "trulioo";         cluster = "frc" }
+    @{ name = "Veriff";              ats = "greenhouse";      slug = "veriff";          cluster = "frc" }
+    @{ name = "Guardsquare";         ats = "greenhouse";      slug = "guardsquare";     cluster = "frc" }
+    @{ name = "Incode Technologies"; ats = "greenhouse";      slug = "incode";          cluster = "frc" }
+    @{ name = "Incognia";            ats = "greenhouse";      slug = "incognia";        cluster = "frc" }
+    @{ name = "Oscilar";             ats = "ashby";           slug = "oscilar";         cluster = "frc" }
+    @{ name = "Persona";             ats = "ashby";           slug = "persona";         cluster = "frc" }
+    @{ name = "Quantexa";            ats = "ashby";           slug = "quantexa";        cluster = "frc" }
+
+    # Crypto, Digital Assets & Web3 Payments
+    @{ name = "BitGo";               ats = "greenhouse";      slug = "bitgo";      cluster = "cry" }
+    @{ name = "BVNK";                ats = "greenhouse";      slug = "bvnk";       cluster = "cry" }
+    @{ name = "Coinbase";            ats = "greenhouse";      slug = "coinbase";   cluster = "cry" }
+    @{ name = "Fireblocks";          ats = "greenhouse";      slug = "fireblocks"; cluster = "cry" }
+    @{ name = "Gemini";              ats = "greenhouse";      slug = "gemini";     cluster = "cry" }
+    @{ name = "MoonPay";             ats = "lever";           slug = "moonpay";    cluster = "cry" }
+    @{ name = "B2C2";                ats = "greenhouse";      slug = "b2c2";       cluster = "cry" }
+    @{ name = "Turnkey";             ats = "ashby";           slug = "turnkey";    cluster = "cry" }
 )
 
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)

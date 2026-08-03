@@ -25,11 +25,28 @@ iGaming-focused Role Radar. Two independent pieces:
 6. Crypto, Digital Assets & Web3 Payments
 7. Banking Infrastructure & Embedded Finance
 
-53 companies are currently configured across these clusters — see the
-`$Companies` list at the top of `scripts/build-feed.ps1` to add, remove, or
-re-cluster one. Add a company by finding its ATS job-board slug (usually
-visible in its careers-page URL) and adding one line with `name`, `ats`
-(`greenhouse` | `ashby` | `lever` | `smartrecruiters`), `slug`, and `cluster`.
+57 companies are currently configured across these clusters — a client-provided
+list of ~270 target companies, narrowed to the ones that expose a public,
+unauthenticated ATS job-board API. See the `$Companies` list at the top of
+`scripts/build-feed.ps1` to add, remove, or re-cluster one. Add a company by
+finding its ATS job-board slug (usually visible in its careers-page URL) and
+adding one line with `name`, `ats` (`greenhouse` | `ashby` | `lever` |
+`smartrecruiters`), `slug`, and `cluster`.
+
+`scripts/probe-ats.ps1` automates the slug-hunting part of that: give it a
+tab-separated `cluster<TAB>company name` file and it concurrently tests
+Greenhouse/Ashby/Lever/SmartRecruiters for each (guessing both the full and
+first-word slug) and reports which combinations return real job data. Verify
+any hit before trusting it — short/generic slugs can collide with an
+unrelated company of the same or a similar name (this happened with "Clear
+Junction" → the `clear` Greenhouse board, which turned out to be CLEAR
+Secure, and "Fingerprint Cards" → the `fingerprint` board, which turned out
+to be the identity-verification company Fingerprint/FingerprintJS — both
+were dropped from the config rather than mislabeled).
+
+```powershell
+pwsh ./scripts/probe-ats.ps1 -InputTsv companies.tsv -OutputTsv hits.tsv
+```
 
 ## Running the scraper
 
@@ -37,7 +54,7 @@ visible in its careers-page URL) and adding one line with `name`, `ats`
 pwsh ./scripts/build-feed.ps1
 ```
 
-Rewrites `docs/feed.json` in place. Takes about a minute for all 53
+Rewrites `docs/feed.json` in place. Takes about a minute for all 57
 companies. Safe to re-run any time — it's a full rebuild, not an incremental
 update.
 
@@ -72,8 +89,10 @@ same pattern the original project used (`cram-co/role-radar`).
 - **No agency listings.** Every source here is a direct-employer career
   page. The `AGENCIES` badge mechanism in the front-end is still there but
   unused — wire it up if you add a recruiter-posted feed later.
-- **Company list is a starting set, not exhaustive.** Companies were
-  selected because they run a public ATS job board Greenhouse/Ashby/Lever/
-  SmartRecruiters could be queried directly; some well-known Fintech/Payments
-  names (e.g. companies on Workday) were left out because their listings
-  require a different, per-tenant scraping approach.
+- **Company list covers ~21% of the client-provided ~270 companies.** The
+  other ~79% (Visa, Mastercard, American Express, PayPal, Shopify, SWIFT,
+  Equifax, TransUnion, Apple, and most of the smaller/private vendors on the
+  list) don't expose one of the four supported public ATS APIs — they're on
+  Workday, iCIMS, SuccessFactors, a bespoke careers page, or have no
+  public job board at all. Each would need its own scraping approach (and
+  in some cases, like Workday, that's per-tenant work, not a one-time fix).
